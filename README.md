@@ -9,6 +9,6 @@ A beginner-friendly FastAPI project that loads data from a CSV file into a datab
 ## Sample API Response
 
 [Users API Response]
-(assets/users_response.png)
+![Users API Response](assets/users_response.png)
 
 Run locally:
