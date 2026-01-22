@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 import pandas as pd
 import os
@@ -12,38 +12,48 @@ app = FastAPI(title = "CSV TO DB API")
 # Create the db tables
 Base.metadata.create_all(bind = engine)
 
-# Load CSV
+# Load Csv
 @app.on_event("startup")
 def load_csv():
+    db = next(get_db())
     try:
-        db = next(get_db())
-        csv_path = os.path.join(os.path.dirname(__file__), "../data/sample.csv")
-        if os.path.exists(csv_path):
-            df = pd.read_csv(csv_path)
-            for i, row in df.iterrows():
-                user_data = row.to_dict()
-                create_user(db, user_data)
-        else:
-            print(f"CSV file not found at {csv_path}")
+        ### SKIP DUPS ###
+        if db.query(User).first():
+            print("Data already exists in the db so skipping csv load.")
+            return
+        
+        csv_path = os.path.join(os.path.dirname(__file__), "../data/datainfo.csv")
+        if not os.path.exists(csv_path):
+            print("Csv file not found.")
+            return
+        df = pd.read_csv(csv_path)
+        allowed_columns = {"name", "email", "age", "city"}
+        selected_columns = []
+        for col in df.columns:
+            if col in allowed_columns:
+                selected_columns.append(col)
+        df = df[selected_columns]
+        
+        for _, row in df.iterrows():
+            user_data = row.to_dict()
+            create_user(db, user_data)
+            
+        print("Csv data has been loaded successfully!!!")
     except Exception as e:
-        print(f"Error loading CSV: {str(e)}")
+        print("Error loading csv file.")
+    
     finally:
         db.close()
-
-# Get all users
-@app.get("/users")
-def read_users(db: Session = Depends(get_db)):
-    users = get_users(db)
-    return users
-
-# Get user by ID
-@app.get("/users/{user_id}")
-def read_user(user_id: int, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.id == user_id).first()
-    if user is None:
-        raise HTTPException(status_code=404, detail="User not found")
-    return user
-
+        
 @app.get("/")
-def root():
-    return {"Message": "Welcome to the CSE to DB API"}
+def home():
+    return {'message': 'Welcome to the CSV TO DB API!'}
+
+@app.get("/users")
+def read_users(db: Session = Depends(get_db),
+               limit: int = Query(20, description = "Number of users to return."),
+               offset: int = Query(0, description = "Offset from the first user.")):
+    users = get_users(db)
+    if not users:
+        raise HTTPException(status_code = 404, detail = "No users found")
+    return users

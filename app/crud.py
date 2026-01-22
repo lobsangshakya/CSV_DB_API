@@ -15,5 +15,5 @@ def create_user(db: Session, user_data: dict):
     return user
 
 # Get User by ID
-def get_users(db: Session):
-    return db.query(User).all()
+def get_users(db: Session, limit: int = 20, offset: int = 0):
+    return db.query(User).offset(offset).limit(limit).all()
