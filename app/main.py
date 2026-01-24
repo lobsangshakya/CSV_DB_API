@@ -15,10 +15,11 @@ Base.metadata.create_all(bind = engine)
 # Load Csv
 @app.on_event("startup")
 def load_csv():
+    FORCED_RELOAD = True
     db = next(get_db())
     try:
         ### SKIP DUPS ###
-        if db.query(User).first():
+        if not FORCED_RELOAD and db.query(User).first():
             print("Data already exists in the db so skipping csv load.")
             return
         
