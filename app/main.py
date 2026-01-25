@@ -15,6 +15,7 @@ Base.metadata.create_all(bind = engine)
 # Load Csv
 @app.on_event("startup")
 def load_csv():
+    # Forced_reload
     FORCED_RELOAD = True
     db = next(get_db())
     try:
