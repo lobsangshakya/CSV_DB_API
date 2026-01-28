@@ -15,4 +15,5 @@ A beginner-friendly FastAPI project that loads data from a CSV file into a datab
 
 
 Run locally:
+
 uvicorn app.main:app --reload
